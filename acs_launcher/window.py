@@ -103,24 +103,21 @@ class MainWindow(Gtk.ApplicationWindow):
         )
         vbox.pack_start(button_box, False, False, 0)
 
-        passwords_btn = Gtk.Button(label="Manage Passwords")
+        passwords_btn = Gtk.Button(label="Password")
         passwords_btn.connect("clicked", self._on_manage_passwords)
-        button_box.pack_start(passwords_btn, False, False, 0)
-
-        spacer = Gtk.Box()
-        button_box.pack_start(spacer, True, True, 0)
-
-        functions_btn = Gtk.Button(label="Functions")
-        functions_btn.connect("clicked", self._on_manage_functions)
-        button_box.pack_end(functions_btn, False, False, 0)
-
-        prefs_btn = Gtk.Button(label="Preferences")
-        prefs_btn.connect("clicked", self._on_preferences)
-        button_box.pack_end(prefs_btn, False, False, 0)
+        button_box.pack_start(passwords_btn, True, True, 0)
 
         systems_btn = Gtk.Button(label="Systems")
         systems_btn.connect("clicked", self._on_manage_systems)
-        button_box.pack_end(systems_btn, False, False, 0)
+        button_box.pack_start(systems_btn, True, True, 0)
+
+        functions_btn = Gtk.Button(label="Functions")
+        functions_btn.connect("clicked", self._on_manage_functions)
+        button_box.pack_start(functions_btn, True, True, 0)
+
+        prefs_btn = Gtk.Button(label="Preferences")
+        prefs_btn.connect("clicked", self._on_preferences)
+        button_box.pack_start(prefs_btn, True, True, 0)
 
         # --- Status bar ---
         self.statusbar = Gtk.Statusbar()

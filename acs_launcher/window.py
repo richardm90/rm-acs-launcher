@@ -3,13 +3,20 @@ import threading
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, GdkPixbuf
 
 from acs_launcher import config, passwords, launcher
 from acs_launcher.dialogs.password_dialog import PasswordDialog
 from acs_launcher.dialogs.system_manager_dialog import SystemManagerDialog
 from acs_launcher.dialogs.function_manager_dialog import FunctionManagerDialog
 from acs_launcher.dialogs.preferences_dialog import PreferencesDialog
+
+import os
+
+ACS_LOGO_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data", "acs-logo.png",
+)
 
 
 class MainWindow(Gtk.ApplicationWindow):
@@ -118,6 +125,25 @@ class MainWindow(Gtk.ApplicationWindow):
         prefs_btn = Gtk.Button(label="Preferences")
         prefs_btn.connect("clicked", self._on_preferences)
         button_box.pack_start(prefs_btn, True, True, 0)
+
+        # --- ACS launcher icon ---
+        if os.path.exists(ACS_LOGO_PATH):
+            acs_box = Gtk.Box(
+                orientation=Gtk.Orientation.HORIZONTAL,
+                margin_start=20,
+                margin_bottom=10,
+            )
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                ACS_LOGO_PATH, 36, 36, True
+            )
+            acs_image = Gtk.Image.new_from_pixbuf(pixbuf)
+            acs_btn = Gtk.Button()
+            acs_btn.set_image(acs_image)
+            acs_btn.set_relief(Gtk.ReliefStyle.NONE)
+            acs_btn.set_tooltip_text("Launch ACS")
+            acs_btn.connect("clicked", self._on_launch_acs)
+            acs_box.pack_start(acs_btn, False, False, 0)
+            vbox.pack_start(acs_box, False, False, 0)
 
         # --- Status bar ---
         self.statusbar = Gtk.Statusbar()
@@ -310,6 +336,20 @@ class MainWindow(Gtk.ApplicationWindow):
         self._launching = False
         self.launch_button.set_label("Launch")
         self._update_launch_sensitivity()
+
+    # ---- ACS default launcher ----
+
+    def _on_launch_acs(self, button):
+        acs_exe = self.cfg.get("acs_exe_path", "")
+        if not acs_exe:
+            self._set_error_status("ACS executable not configured — check Preferences")
+            return
+        self._set_status("Launching ACS...")
+        ok, msg = launcher.launch(acs_exe)
+        if ok:
+            self._set_status(msg)
+        else:
+            self._set_error_status(msg)
 
     # ---- Dialog handlers ----
 

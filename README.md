@@ -4,6 +4,8 @@ A GTK3 desktop application for Linux that provides a point-and-click interface f
 
 The application allows selection of system, user and function. User passwords are stored in the GNOME Keyring allowing the application to allow easy selection of the user used to launch the application, which is cumbersome when using the ACS launcher.
 
+**Prerequisite:** The systems must be defined within ACS and the *Connection* > *Password Prompting* selection must be set to *Use Shared Credentials*.
+
 ## Features
 
 - **Quick Launch** — Select system, user, and function from dropdowns, then click Launch

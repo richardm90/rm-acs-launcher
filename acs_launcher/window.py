@@ -30,6 +30,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self._apply_css()
         self.cfg = config.load_config()
         self._launching = False
+        self._logged_on = None  # (system_name, user) of last successful logon
         self._build_ui()
         self._populate_combos()
         self._restore_last_selections()
@@ -292,8 +293,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.cfg, system, user, password
             )
 
-            # Run logon command if required
-            if fn.get("requires_logon", False):
+            # Run logon command if required (skip if already logged on for this system/user)
+            logon_key = (system["name"], user)
+            if fn.get("requires_logon", False) and self._logged_on != logon_key:
                 logon_cmd = self.cfg.get("logon_cmd", "")
                 GLib.idle_add(self._set_status, "Authenticating...")
                 try:
@@ -306,7 +308,9 @@ class MainWindow(Gtk.ApplicationWindow):
                     return
 
                 ok, msg = launcher.run_logon(cmd)
-                if not ok:
+                if ok:
+                    self._logged_on = logon_key
+                else:
                     GLib.idle_add(self._set_error_status, msg)
                     GLib.idle_add(self._launch_finished)
                     return

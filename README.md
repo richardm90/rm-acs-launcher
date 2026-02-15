@@ -7,10 +7,12 @@ The application allows selection of system, user and function. User passwords ar
 ## Features
 
 - **Quick Launch** — Select system, user, and function from dropdowns, then click Launch
+- **Favourite Icons** — Configurable quick-launch icon buttons for frequently used functions
 - **Password Management** — Stores credentials securely in GNOME Keyring via libsecret
 - **Custom Systems** — Define IBM i systems with users and custom fields (e.g. HOD session files)
 - **Custom Functions** — Configure launch commands with placeholder substitution
-- **Automatic Logon** — Optional authentication step before launching a plugin
+- **Automatic Logon** — Optional authentication step before launching a plugin, skipped when the same system/user is already authenticated in the current session
+- **ACS Launcher** — One-click button to open the default IBM ACS GUI
 - **Remembers Selections** — Restores your last system, user, and function on startup
 - **Desktop Integration** — Installs as a standard Linux desktop application
 
@@ -25,7 +27,7 @@ The application allows selection of system, user and function. User passwords ar
 | splf | Printer Output (Spool Files) | Yes |
 | rmtcmd | Remote Command | Yes |
 | l1c | Navigator for i | Yes |
-| sysdbg | System Debugger | Yes |
+| sysdbg | System Debugger | No |
 | ssh | SSH Terminal | No |
 | cfg | System Configuration | No |
 | keyman | Certificate Management | No |

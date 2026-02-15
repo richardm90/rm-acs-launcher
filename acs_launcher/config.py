@@ -104,7 +104,7 @@ DEFAULT_FUNCTIONS = [
         "id": "sysdbg",
         "label": "System Debugger",
         "launch_cmd": "{java} -jar {acs_jar} /plugin=sysdbg /system={system}",
-        "requires_logon": True,
+        "requires_logon": False,
         "system_fields": [],
         "is_favourite": True,
         "icon_path": "sysdbg.png",
@@ -135,6 +135,11 @@ def load_config():
             for key in config:
                 if key in saved:
                     config[key] = saved[key]
+            # Add any new default functions not present in the saved config
+            saved_ids = {fn["id"] for fn in config["functions"]}
+            for fn in DEFAULT_FUNCTIONS:
+                if fn["id"] not in saved_ids:
+                    config["functions"].append(copy.deepcopy(fn))
         except (json.JSONDecodeError, OSError):
             pass
     return config

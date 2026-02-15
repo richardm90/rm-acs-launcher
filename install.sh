@@ -18,6 +18,10 @@ mkdir -p "$(dirname "$DESKTOP_FILE")"
 cp -r "${SCRIPT_DIR}/acs_launcher" "$INSTALL_DIR/"
 cp -r "${SCRIPT_DIR}/data" "$INSTALL_DIR/"
 
+# Write installed version
+VERSION=$(python3 -c "import sys; sys.path.insert(0, '${SCRIPT_DIR}'); from acs_launcher import __version__; print(__version__)")
+echo "$VERSION" > "$INSTALL_DIR/VERSION"
+
 # Create launcher script
 cat > "$BIN_DIR/$APP_NAME" << EOF
 #!/bin/bash
@@ -30,7 +34,7 @@ sed -e "s|Exec=.*|Exec=$BIN_DIR/$APP_NAME|" \
     -e "s|Icon=.*|Icon=$INSTALL_DIR/data/rm-acs-launcher.png|" \
     "${SCRIPT_DIR}/data/rm-acs-launcher.desktop" > "$DESKTOP_FILE"
 
-echo "Installation complete:"
+echo "Installation complete (v${VERSION}):"
 echo "  App files:     $INSTALL_DIR/"
 echo "  Launcher:      $BIN_DIR/$APP_NAME"
 echo "  Desktop entry:  $DESKTOP_FILE"

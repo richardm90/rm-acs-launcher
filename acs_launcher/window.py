@@ -5,7 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
-from acs_launcher import config, passwords, launcher
+from acs_launcher import __version__, config, passwords, launcher
 from acs_launcher.dialogs.password_dialog import PasswordDialog
 from acs_launcher.dialogs.system_manager_dialog import SystemManagerDialog
 from acs_launcher.dialogs.function_manager_dialog import FunctionManagerDialog
@@ -158,7 +158,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # --- Status bar ---
         self.statusbar = Gtk.Statusbar()
-        self.statusbar.push(0, "Ready")
+        self.statusbar.push(0, f"Ready — v{__version__}")
         vbox.pack_end(self.statusbar, False, False, 0)
 
         self.show_all()

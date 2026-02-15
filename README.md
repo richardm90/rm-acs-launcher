@@ -126,6 +126,42 @@ Launch and logon commands support these placeholders:
 | `{java}` | Java path from preferences |
 | `{custom_field}` | Any custom field defined on the system |
 
+## Versioning
+
+The application uses [semantic versioning](https://semver.org/) (`major.minor.patch`). The version is defined in a single place: `acs_launcher/__init__.py`.
+
+The current version is displayed in the status bar when the application starts.
+
+### Release Process
+
+1. Update the version in `acs_launcher/__init__.py`
+2. Commit the change:
+   ```bash
+   git commit -am "Release v0.2.0"
+   ```
+3. Tag the release:
+   ```bash
+   git tag v0.2.0
+   ```
+4. Push with tags:
+   ```bash
+   git push && git push --tags
+   ```
+
+Users update by pulling the latest changes and re-running the install script:
+
+```bash
+cd rm-acs-launcher
+git pull
+./install.sh
+```
+
+The installed version can be checked without running the app:
+
+```bash
+cat ~/.local/share/rm-acs-launcher/VERSION
+```
+
 ## Project Structure
 
 ```

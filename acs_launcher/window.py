@@ -228,9 +228,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.cfg["last_function"] = fn_id
         config.save_config(self.cfg)
 
-        # Check if we need a password (logon_cmd references {password})
-        needs_password = fn.get("logon_cmd") and "{password}" in fn["logon_cmd"]
-        # Also check launch_cmd for {password}
+        # Check if we need a password
+        needs_password = fn.get("requires_logon", False)
         if not needs_password and "{password}" in fn.get("launch_cmd", ""):
             needs_password = True
 
@@ -267,9 +266,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.cfg, system, user, password
             )
 
-            # Run logon command if present
-            logon_cmd = fn.get("logon_cmd")
-            if logon_cmd:
+            # Run logon command if required
+            if fn.get("requires_logon", False):
+                logon_cmd = self.cfg.get("logon_cmd", "")
                 GLib.idle_add(self._set_status, "Authenticating...")
                 try:
                     cmd = launcher.substitute(logon_cmd, placeholders)

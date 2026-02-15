@@ -28,9 +28,24 @@ class PreferencesDialog(Gtk.Dialog):
         grid = Gtk.Grid(column_spacing=10, row_spacing=10)
         box.pack_start(grid, False, False, 0)
 
+        # ACS executable path
+        grid.attach(
+            Gtk.Label(label="ACS executable:", halign=Gtk.Align.END), 0, 0, 1, 1
+        )
+        exe_box = Gtk.Box(spacing=6)
+        self.exe_entry = Gtk.Entry()
+        self.exe_entry.set_text(cfg.get("acs_exe_path", ""))
+        self.exe_entry.set_hexpand(True)
+        exe_box.pack_start(self.exe_entry, True, True, 0)
+
+        exe_browse = Gtk.Button(label="Browse")
+        exe_browse.connect("clicked", self._on_browse_exe)
+        exe_box.pack_start(exe_browse, False, False, 0)
+        grid.attach(exe_box, 1, 0, 1, 1)
+
         # ACS jar path
         grid.attach(
-            Gtk.Label(label="ACS jar path:", halign=Gtk.Align.END), 0, 0, 1, 1
+            Gtk.Label(label="ACS jar path:", halign=Gtk.Align.END), 0, 1, 1, 1
         )
         jar_box = Gtk.Box(spacing=6)
         self.jar_entry = Gtk.Entry()
@@ -41,11 +56,11 @@ class PreferencesDialog(Gtk.Dialog):
         jar_browse = Gtk.Button(label="Browse")
         jar_browse.connect("clicked", self._on_browse_jar)
         jar_box.pack_start(jar_browse, False, False, 0)
-        grid.attach(jar_box, 1, 0, 1, 1)
+        grid.attach(jar_box, 1, 1, 1, 1)
 
         # Java path
         grid.attach(
-            Gtk.Label(label="Java path:", halign=Gtk.Align.END), 0, 1, 1, 1
+            Gtk.Label(label="Java path:", halign=Gtk.Align.END), 0, 2, 1, 1
         )
         java_box = Gtk.Box(spacing=6)
         self.java_entry = Gtk.Entry()
@@ -56,18 +71,32 @@ class PreferencesDialog(Gtk.Dialog):
         java_browse = Gtk.Button(label="Browse")
         java_browse.connect("clicked", self._on_browse_java)
         java_box.pack_start(java_browse, False, False, 0)
-        grid.attach(java_box, 1, 1, 1, 1)
+        grid.attach(java_box, 1, 2, 1, 1)
 
         # Java options
         grid.attach(
-            Gtk.Label(label="Java options:", halign=Gtk.Align.END), 0, 2, 1, 1
+            Gtk.Label(label="Java options:", halign=Gtk.Align.END), 0, 3, 1, 1
         )
         self.opts_entry = Gtk.Entry()
         self.opts_entry.set_text(cfg.get("java_opts", ""))
         self.opts_entry.set_hexpand(True)
-        grid.attach(self.opts_entry, 1, 2, 1, 1)
+        grid.attach(self.opts_entry, 1, 3, 1, 1)
+
+        # Logon command
+        grid.attach(
+            Gtk.Label(label="Logon command:", halign=Gtk.Align.END), 0, 4, 1, 1
+        )
+        self.logon_entry = Gtk.Entry()
+        self.logon_entry.set_text(cfg.get("logon_cmd", ""))
+        self.logon_entry.set_hexpand(True)
+        grid.attach(self.logon_entry, 1, 4, 1, 1)
 
         self.show_all()
+
+    def _on_browse_exe(self, button):
+        path = self._file_chooser("Select ACS executable")
+        if path:
+            self.exe_entry.set_text(path)
 
     def _on_browse_jar(self, button):
         path = self._file_chooser("Select ACS jar file", "*.jar")
@@ -104,6 +133,8 @@ class PreferencesDialog(Gtk.Dialog):
         return path
 
     def apply(self):
+        self.cfg["acs_exe_path"] = self.exe_entry.get_text().strip()
         self.cfg["acs_jar_path"] = self.jar_entry.get_text().strip()
         self.cfg["java_path"] = self.java_entry.get_text().strip()
         self.cfg["java_opts"] = self.opts_entry.get_text().strip()
+        self.cfg["logon_cmd"] = self.logon_entry.get_text().strip()

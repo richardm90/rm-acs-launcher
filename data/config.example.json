@@ -1,0 +1,34 @@
+{
+  "acs_jar_path": "/opt/ibm/iAccessClientSolutions/acsbundle.jar",
+  "java_path": "/usr/bin/java",
+  "java_opts": "-Xmx1024m",
+  "systems": [
+    {
+      "name": "myibmi.com",
+      "label": "Production",
+      "users": ["richard", "hal"],
+      "fields": {
+        "hod_file": "/home/richard/IBM/iAccessClient/Emulator/myibmi.com.hod"
+      }
+    }
+  ],
+  "functions": [
+    {
+      "id": "5250",
+      "label": "5250 Terminal Emulator",
+      "launch_cmd": "/opt/ibm/iAccessClientSolutions/Start_Programs/Linux_x86-64/acslaunch_linux-64 {hod_file}",
+      "logon_cmd": "{java} -jar {acs_jar} /plugin=logon /system={system} /userid={user} /password={password} /auth",
+      "system_fields": ["hod_file"]
+    },
+    {
+      "id": "rss",
+      "label": "Run SQL Scripts",
+      "launch_cmd": "{java} -jar {acs_jar} /plugin=rss /system={system}",
+      "logon_cmd": "{java} -jar {acs_jar} /plugin=logon /system={system} /userid={user} /password={password} /auth",
+      "system_fields": []
+    }
+  ],
+  "last_system": "",
+  "last_user": "",
+  "last_function": ""
+}

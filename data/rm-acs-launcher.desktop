@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=RM ACS Launcher
+Comment=Launch IBM i Access Client Solutions tools
+Exec=python3 /home/richard/git/rm-acs-launcher/acs_launcher/main.py
+Type=Application
+Terminal=false
+Categories=Utility;Development;
+Keywords=ibm;ibmi;acs;5250;

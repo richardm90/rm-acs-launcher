@@ -46,19 +46,37 @@ sudo apt install python3 python3-gi gir1.2-secret-1
 
 ## Installation
 
-1. Clone or download this repository
+1. Clone or download this repository:
+
+```bash
+git clone https://github.com/richard/rm-acs-launcher.git
+cd rm-acs-launcher
+```
+
 2. Run the install script:
 
 ```bash
 ./install.sh
 ```
 
-This creates a desktop entry at `~/.local/share/applications/rm-acs-launcher.desktop` so the app appears in your application menu.
+This installs the application to `~/.local/share/rm-acs-launcher/`, creates a launcher script at `~/.local/bin/rm-acs-launcher`, and adds a desktop entry so the app appears in your application menu.
 
-To run directly without installing:
+Once installed, the source repository is no longer needed and can be removed.
+
+3. Launch from the application menu, or from the terminal:
 
 ```bash
-python3 acs_launcher/main.py
+rm-acs-launcher
+```
+
+### Updating
+
+To update, pull the latest changes and re-run the install script:
+
+```bash
+cd rm-acs-launcher
+git pull
+./install.sh
 ```
 
 ## Uninstallation
@@ -67,7 +85,7 @@ python3 acs_launcher/main.py
 ./uninstall.sh
 ```
 
-This removes the desktop entry. Configuration files in `~/.config/rm-acs-launcher/` and saved passwords in GNOME Keyring are preserved.
+This removes the application files, launcher script, and desktop entry. Configuration files in `~/.config/rm-acs-launcher/` and saved passwords in GNOME Keyring are preserved.
 
 ## Configuration
 

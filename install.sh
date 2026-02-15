@@ -6,8 +6,9 @@ DESKTOP_FILE="$HOME/.local/share/applications/rm-acs-launcher.desktop"
 
 echo "Installing RM ACS Launcher..."
 
-# Create desktop entry with correct path
-sed "s|Exec=.*|Exec=python3 ${SCRIPT_DIR}/acs_launcher/main.py|" \
+# Create desktop entry with correct paths
+sed -e "s|Exec=.*|Exec=python3 ${SCRIPT_DIR}/acs_launcher/main.py|" \
+    -e "s|Icon=.*|Icon=${SCRIPT_DIR}/data/rm-acs-launcher.png|" \
     "${SCRIPT_DIR}/data/rm-acs-launcher.desktop" > "$DESKTOP_FILE"
 
 echo "Desktop entry installed to: $DESKTOP_FILE"

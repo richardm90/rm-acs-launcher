@@ -19,14 +19,18 @@
       "label": "5250 Terminal Emulator",
       "launch_cmd": "/opt/ibm/iAccessClientSolutions/Start_Programs/Linux_x86-64/acslaunch_linux-64 {hod_file}",
       "requires_logon": true,
-      "system_fields": ["hod_file"]
+      "system_fields": ["hod_file"],
+      "is_favourite": true,
+      "icon_path": "5250.png"
     },
     {
       "id": "rss",
       "label": "Run SQL Scripts",
       "launch_cmd": "{java} -jar {acs_jar} /plugin=rss /system={system}",
       "requires_logon": true,
-      "system_fields": []
+      "system_fields": [],
+      "is_favourite": false,
+      "icon_path": ""
     }
   ],
   "last_system": "",

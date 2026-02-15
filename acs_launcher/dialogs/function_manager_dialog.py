@@ -87,6 +87,8 @@ class FunctionManagerDialog(Gtk.Dialog):
             "launch_cmd": "",
             "requires_logon": False,
             "system_fields": [],
+            "is_favourite": False,
+            "icon_path": "",
         }
         dialog = FunctionEditDialog(self, fn, is_new=True)
         response = dialog.run()
@@ -196,6 +198,27 @@ class FunctionEditDialog(Gtk.Dialog):
         )
         grid.attach(fields_box, 1, 4, 1, 1)
 
+        # Favourite
+        self.favourite_check = Gtk.CheckButton(label="Show as quick-launch favourite")
+        self.favourite_check.set_active(fn.get("is_favourite", False))
+        grid.attach(self.favourite_check, 1, 5, 1, 1)
+
+        # Icon path
+        grid.attach(
+            Gtk.Label(label="Icon:", halign=Gtk.Align.END),
+            0, 6, 1, 1,
+        )
+        icon_box = Gtk.Box(spacing=8)
+        self.icon_entry = Gtk.Entry()
+        self.icon_entry.set_text(fn.get("icon_path", ""))
+        self.icon_entry.set_hexpand(True)
+        self.icon_entry.set_placeholder_text("Path to icon image (PNG)")
+        icon_box.pack_start(self.icon_entry, True, True, 0)
+        icon_browse_btn = Gtk.Button(label="Browse...")
+        icon_browse_btn.connect("clicked", self._on_browse_icon)
+        icon_box.pack_start(icon_browse_btn, False, False, 0)
+        grid.attach(icon_box, 1, 6, 1, 1)
+
         # Placeholder help
         help_label = Gtk.Label(
             label=(
@@ -210,6 +233,29 @@ class FunctionEditDialog(Gtk.Dialog):
 
         self.show_all()
 
+    def _on_browse_icon(self, button):
+        dialog = Gtk.FileChooserDialog(
+            title="Select Icon",
+            transient_for=self,
+            action=Gtk.FileChooserAction.OPEN,
+        )
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Open", Gtk.ResponseType.OK)
+        img_filter = Gtk.FileFilter()
+        img_filter.set_name("Images")
+        img_filter.add_mime_type("image/png")
+        img_filter.add_mime_type("image/svg+xml")
+        dialog.add_filter(img_filter)
+        current = self.icon_entry.get_text().strip()
+        if current:
+            import os
+            if os.path.isfile(current):
+                dialog.set_filename(current)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.icon_entry.set_text(dialog.get_filename())
+        dialog.destroy()
+
     def apply(self, fn):
         fn["id"] = self.id_entry.get_text().strip()
         fn["label"] = self.label_entry.get_text().strip()
@@ -221,3 +267,5 @@ class FunctionEditDialog(Gtk.Dialog):
             fn["system_fields"] = [f.strip() for f in fields_text.split(",") if f.strip()]
         else:
             fn["system_fields"] = []
+        fn["is_favourite"] = self.favourite_check.get_active()
+        fn["icon_path"] = self.icon_entry.get_text().strip()

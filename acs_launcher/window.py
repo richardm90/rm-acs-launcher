@@ -15,7 +15,7 @@ import os
 
 ACS_LOGO_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "acs-logo.png",
+    "data", "icons", "acs-logo.png",
 )
 
 
@@ -86,20 +86,49 @@ class MainWindow(Gtk.ApplicationWindow):
         self.function_combo.connect("changed", self._on_selection_changed)
         grid.attach(self.function_combo, 1, 2, 1, 1)
 
-        # --- Launch button ---
-        launch_box = Gtk.Box(
+        # --- Launch row: Launch button + separator + favourites + ACS icon ---
+        self.launch_row = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
-            halign=Gtk.Align.CENTER,
+            spacing=8,
             margin_top=10,
             margin_bottom=10,
+            margin_start=20,
+            margin_end=20,
         )
-        vbox.pack_start(launch_box, False, False, 0)
+        vbox.pack_start(self.launch_row, False, False, 0)
+
+        # ACS default launcher icon
+        if os.path.exists(ACS_LOGO_PATH):
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                ACS_LOGO_PATH, 28, 28, True
+            )
+            acs_image = Gtk.Image.new_from_pixbuf(pixbuf)
+            acs_btn = Gtk.Button()
+            acs_btn.set_image(acs_image)
+            acs_btn.set_relief(Gtk.ReliefStyle.NONE)
+            acs_btn.set_tooltip_text("IBM ACS Launcher")
+            acs_btn.connect("clicked", self._on_launch_acs)
+            self.launch_row.pack_start(acs_btn, False, False, 0)
+
+        # Favourites container (rebuilt dynamically)
+        self._favourites_box = Gtk.Box(spacing=4)
+        self.launch_row.pack_start(self._favourites_box, False, False, 0)
+
+        # Separator + Launch button on the right
+        self.launch_row.pack_start(Gtk.Box(), True, True, 0)  # spacer
+
+        self._favourites_separator = Gtk.Separator(
+            orientation=Gtk.Orientation.VERTICAL
+        )
+        self.launch_row.pack_start(self._favourites_separator, False, False, 4)
 
         self.launch_button = Gtk.Button(label="Launch")
         self.launch_button.set_size_request(120, -1)
         self.launch_button.get_style_context().add_class("suggested-action")
         self.launch_button.connect("clicked", self._on_launch)
-        launch_box.pack_start(self.launch_button, False, False, 0)
+        self.launch_row.pack_start(self.launch_button, False, False, 0)
+
+        self._build_favourites()
 
         # --- Bottom buttons ---
         button_box = Gtk.Box(
@@ -126,25 +155,6 @@ class MainWindow(Gtk.ApplicationWindow):
         prefs_btn = Gtk.Button(label="Preferences")
         prefs_btn.connect("clicked", self._on_preferences)
         button_box.pack_start(prefs_btn, True, True, 0)
-
-        # --- ACS launcher icon ---
-        if os.path.exists(ACS_LOGO_PATH):
-            acs_box = Gtk.Box(
-                orientation=Gtk.Orientation.HORIZONTAL,
-                margin_start=20,
-                margin_bottom=10,
-            )
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                ACS_LOGO_PATH, 36, 36, True
-            )
-            acs_image = Gtk.Image.new_from_pixbuf(pixbuf)
-            acs_btn = Gtk.Button()
-            acs_btn.set_image(acs_image)
-            acs_btn.set_relief(Gtk.ReliefStyle.NONE)
-            acs_btn.set_tooltip_text("Launch ACS")
-            acs_btn.connect("clicked", self._on_launch_acs)
-            acs_box.pack_start(acs_btn, False, False, 0)
-            vbox.pack_start(acs_box, False, False, 0)
 
         # --- Status bar ---
         self.statusbar = Gtk.Statusbar()
@@ -240,6 +250,58 @@ class MainWindow(Gtk.ApplicationWindow):
         self.statusbar.push(0, message)
         self.statusbar.get_style_context().add_class("error-status")
 
+    # ---- Favourites ----
+
+    def _build_favourites(self):
+        for child in self._favourites_box.get_children():
+            child.destroy()
+        has_favourites = False
+        for fn in self.cfg["functions"]:
+            if not fn.get("is_favourite", False):
+                continue
+            icon_path = config.resolve_icon_path(fn.get("icon_path", ""), fn["id"])
+            if not icon_path or not os.path.exists(icon_path):
+                icon_path = ACS_LOGO_PATH
+            if not os.path.exists(icon_path):
+                continue
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    icon_path, 28, 28, True
+                )
+            except Exception:
+                continue
+            image = Gtk.Image.new_from_pixbuf(pixbuf)
+            btn = Gtk.Button()
+            btn.set_image(image)
+            btn.set_relief(Gtk.ReliefStyle.NONE)
+            btn.set_tooltip_text(fn["label"])
+            fn_id = fn["id"]
+            btn.connect("clicked", lambda b, fid=fn_id: self._on_favourite_launch(fid))
+            self._favourites_box.pack_start(btn, False, False, 0)
+            has_favourites = True
+        self._favourites_separator.set_visible(has_favourites)
+        self._favourites_box.show_all()
+
+    def _on_favourite_launch(self, fn_id):
+        system_name = self.system_combo.get_active_id()
+        user = self.user_combo.get_active_id()
+        if not system_name or not user:
+            self._set_error_status("Select a system and user first")
+            return
+        fn = config.get_function(self.cfg, fn_id)
+        if not fn:
+            self._set_error_status(f"Function '{fn_id}' not found")
+            return
+        system = config.get_system(self.cfg, system_name)
+        if not system:
+            return
+        if not config.system_has_required_fields(system, fn):
+            self._set_error_status(
+                f"System is missing required fields: {', '.join(fn.get('system_fields', []))}"
+            )
+            return
+        self._do_launch(system_name, user, system, fn)
+
     # ---- Launch flow ----
 
     def _on_launch(self, button):
@@ -255,6 +317,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.cfg["last_function"] = fn_id
         config.save_config(self.cfg)
 
+        self._do_launch(system_name, user, system, fn)
+
+    def _do_launch(self, system_name, user, system, fn):
         # Check if we need a password
         needs_password = fn.get("requires_logon", False)
         if not needs_password and "{password}" in fn.get("launch_cmd", ""):
@@ -428,6 +493,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self._populate_combos()
         self._restore_last_selections()
         self._update_launch_sensitivity()
+        self._build_favourites()
 
     def _on_preferences(self, button):
         dialog = PreferencesDialog(self, self.cfg)

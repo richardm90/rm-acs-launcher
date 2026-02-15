@@ -4,8 +4,6 @@ A GTK3 desktop application for Linux that provides a point-and-click interface f
 
 The application allows selection of system, user and function. User passwords are stored in the GNOME Keyring allowing the application to allow easy selection of the user used to launch the application, which is cumbersome when using the ACS launcher.
 
-**Prerequisite:** The systems must be defined within ACS and the *Connection* > *Password Prompting* selection must be set to *Use Shared Credentials*.
-
 ## Features
 
 - **Quick Launch** — Select system, user, and function from dropdowns, then click Launch
@@ -27,6 +25,7 @@ The application allows selection of system, user and function. User passwords ar
 | splf | Printer Output (Spool Files) | Yes |
 | rmtcmd | Remote Command | Yes |
 | l1c | Navigator for i | Yes |
+| sysdbg | System Debugger | Yes |
 | ssh | SSH Terminal | No |
 | cfg | System Configuration | No |
 | keyman | Certificate Management | No |
@@ -37,6 +36,8 @@ The application allows selection of system, user and function. User passwords ar
 - GTK 3 (PyGObject)
 - libsecret (GNOME Keyring)
 - IBM i Access Client Solutions installed locally
+  - The systems must already be defined within ACS
+  - The *Connection* > *Password Prompting* selection must be set to *Use Shared Credentials*
 
 ### Installing dependencies on Debian/Ubuntu/Mint
 
@@ -133,6 +134,7 @@ rm-acs-launcher/
 │       ├── function_manager_dialog.py  # Function/command management
 │       └── preferences_dialog.py       # Application preferences
 ├── data/
+│   ├── icons/                      # Bundled function icons
 │   ├── config.example.json         # Example configuration
 │   ├── rm-acs-launcher.desktop     # Desktop entry template
 │   └── rm-acs-launcher.png         # Application icon

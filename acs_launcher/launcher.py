@@ -12,6 +12,7 @@ def build_placeholders(config, system, user, password):
         "system": system["name"],
         "user": user,
         "password": password or "",
+        "acs_exe": config.get("acs_exe_path", ""),
         "acs_jar": config.get("acs_jar_path", ""),
         "java": config.get("java_path", "java"),
     }

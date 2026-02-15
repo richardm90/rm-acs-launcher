@@ -2,6 +2,7 @@
 Name=RM ACS Launcher
 Comment=Launch IBM i Access Client Solutions tools
 Exec=python3 /home/richard/git/rm-acs-launcher/acs_launcher/main.py
+Icon=/home/richard/git/rm-acs-launcher/data/rm-acs-launcher.png
 Type=Application
 Terminal=false
 Categories=Utility;Development;

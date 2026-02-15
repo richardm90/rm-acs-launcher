@@ -85,8 +85,10 @@ class FunctionManagerDialog(Gtk.Dialog):
             "id": "",
             "label": "",
             "launch_cmd": "",
-            "logon_cmd": None,
+            "requires_logon": False,
             "system_fields": [],
+            "is_favourite": False,
+            "icon_path": "",
         }
         dialog = FunctionEditDialog(self, fn, is_new=True)
         response = dialog.run()
@@ -172,29 +174,10 @@ class FunctionEditDialog(Gtk.Dialog):
         self.launch_entry.set_hexpand(True)
         grid.attach(self.launch_entry, 1, 2, 1, 1)
 
-        # Logon command
-        grid.attach(
-            Gtk.Label(label="Logon command:", halign=Gtk.Align.END, valign=Gtk.Align.START),
-            0, 3, 1, 1,
-        )
-        logon_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        # Requires logon
         self.logon_check = Gtk.CheckButton(label="Requires logon before launch")
-        self.logon_check.connect("toggled", self._on_logon_toggled)
-        logon_box.pack_start(self.logon_check, False, False, 0)
-
-        self.logon_entry = Gtk.Entry()
-        self.logon_entry.set_placeholder_text(
-            "{java} -jar {acs_jar} /plugin=logon /system={system} /userid={user} /password={password} /auth"
-        )
-        logon_box.pack_start(self.logon_entry, False, False, 0)
-        grid.attach(logon_box, 1, 3, 1, 1)
-
-        if fn.get("logon_cmd"):
-            self.logon_check.set_active(True)
-            self.logon_entry.set_text(fn["logon_cmd"])
-        else:
-            self.logon_check.set_active(False)
-            self.logon_entry.set_sensitive(False)
+        self.logon_check.set_active(fn.get("requires_logon", False))
+        grid.attach(self.logon_check, 1, 3, 1, 1)
 
         # Required system fields
         grid.attach(
@@ -215,11 +198,32 @@ class FunctionEditDialog(Gtk.Dialog):
         )
         grid.attach(fields_box, 1, 4, 1, 1)
 
+        # Favourite
+        self.favourite_check = Gtk.CheckButton(label="Show as quick-launch favourite")
+        self.favourite_check.set_active(fn.get("is_favourite", False))
+        grid.attach(self.favourite_check, 1, 5, 1, 1)
+
+        # Icon path
+        grid.attach(
+            Gtk.Label(label="Icon:", halign=Gtk.Align.END),
+            0, 6, 1, 1,
+        )
+        icon_box = Gtk.Box(spacing=8)
+        self.icon_entry = Gtk.Entry()
+        self.icon_entry.set_text(fn.get("icon_path", ""))
+        self.icon_entry.set_hexpand(True)
+        self.icon_entry.set_placeholder_text("Path to icon image (PNG)")
+        icon_box.pack_start(self.icon_entry, True, True, 0)
+        icon_browse_btn = Gtk.Button(label="Browse...")
+        icon_browse_btn.connect("clicked", self._on_browse_icon)
+        icon_box.pack_start(icon_browse_btn, False, False, 0)
+        grid.attach(icon_box, 1, 6, 1, 1)
+
         # Placeholder help
         help_label = Gtk.Label(
             label=(
                 "<small><b>Available placeholders:</b> {system}, {user}, {password}, "
-                "{acs_jar}, {java}, plus any system custom field names</small>"
+                "{acs_exe}, {acs_jar}, {java}, plus any system custom field names</small>"
             ),
             use_markup=True,
             halign=Gtk.Align.START,
@@ -229,22 +233,39 @@ class FunctionEditDialog(Gtk.Dialog):
 
         self.show_all()
 
-    def _on_logon_toggled(self, check):
-        self.logon_entry.set_sensitive(check.get_active())
+    def _on_browse_icon(self, button):
+        dialog = Gtk.FileChooserDialog(
+            title="Select Icon",
+            transient_for=self,
+            action=Gtk.FileChooserAction.OPEN,
+        )
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Open", Gtk.ResponseType.OK)
+        img_filter = Gtk.FileFilter()
+        img_filter.set_name("Images")
+        img_filter.add_mime_type("image/png")
+        img_filter.add_mime_type("image/svg+xml")
+        dialog.add_filter(img_filter)
+        current = self.icon_entry.get_text().strip()
+        if current:
+            import os
+            if os.path.isfile(current):
+                dialog.set_filename(current)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.icon_entry.set_text(dialog.get_filename())
+        dialog.destroy()
 
     def apply(self, fn):
         fn["id"] = self.id_entry.get_text().strip()
         fn["label"] = self.label_entry.get_text().strip()
         fn["launch_cmd"] = self.launch_entry.get_text().strip()
-        if self.logon_check.get_active():
-            logon_text = self.logon_entry.get_text().strip()
-            if not logon_text:
-                logon_text = self.logon_entry.get_placeholder_text()
-            fn["logon_cmd"] = logon_text or None
-        else:
-            fn["logon_cmd"] = None
+        fn["requires_logon"] = self.logon_check.get_active()
+        fn.pop("logon_cmd", None)
         fields_text = self.fields_entry.get_text().strip()
         if fields_text:
             fn["system_fields"] = [f.strip() for f in fields_text.split(",") if f.strip()]
         else:
             fn["system_fields"] = []
+        fn["is_favourite"] = self.favourite_check.get_active()
+        fn["icon_path"] = self.icon_entry.get_text().strip()

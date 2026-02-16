@@ -5,5 +5,6 @@ Exec=python3 /home/richard/git/rm-acs-launcher/acs_launcher/main.py
 Icon=/home/richard/git/rm-acs-launcher/data/rm-acs-launcher.png
 Type=Application
 Terminal=false
+StartupWMClass=com.github.richardm90.rm-acs-launcher
 Categories=Utility;Development;
 Keywords=ibm;ibmi;acs;5250;

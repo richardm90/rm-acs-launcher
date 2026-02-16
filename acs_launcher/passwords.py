@@ -4,7 +4,7 @@ gi.require_version("Secret", "1")
 from gi.repository import Secret
 
 SCHEMA = Secret.Schema.new(
-    "com.github.richard.acslauncher",
+    "com.github.richardm90.rm-acs-launcher",
     Secret.SchemaFlags.NONE,
     {
         "service": Secret.SchemaAttributeType.STRING,

@@ -7,7 +7,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import GLib, Gtk, GdkPixbuf
+
+GLib.set_prgname("com.github.richardm90.rm-acs-launcher")
 
 from acs_launcher import __version__
 from acs_launcher.window import MainWindow
@@ -17,7 +19,7 @@ ICON_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 
 class ACSLauncherApp(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id="com.github.richard.acslauncher")
+        super().__init__(application_id="com.github.richardm90.rm-acs-launcher")
 
     def do_activate(self):
         win = self.get_active_window()

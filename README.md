@@ -58,7 +58,7 @@ sudo apt install python3 python3-gi gir1.2-secret-1
 1. Clone or download this repository:
 
 ```bash
-git clone https://github.com/richard/rm-acs-launcher.git
+git clone https://github.com/richardm90/rm-acs-launcher.git
 cd rm-acs-launcher
 ```
 
@@ -135,7 +135,8 @@ The current version is displayed in the status bar when the application starts.
 ### Release Process
 
 1. Update the version in `acs_launcher/__init__.py`
-2. Commit the change:
+2. Update `CHANGELOG.md` — move Unreleased entries under the new version heading
+3. Commit the change:
    ```bash
    git commit -am "Release v0.2.0"
    ```
@@ -184,5 +185,6 @@ rm-acs-launcher/
 │   └── rm-acs-launcher.png         # Application icon
 ├── install.sh
 ├── uninstall.sh
+├── CHANGELOG.md
 └── README.md
 ```

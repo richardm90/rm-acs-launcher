@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Save last used system, user, and function when launching via quick access icons
+
 ## 0.1.1
 
 - Fix dual panel icons by setting WM_CLASS and StartupWMClass

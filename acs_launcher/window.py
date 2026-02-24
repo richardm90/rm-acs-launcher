@@ -300,6 +300,11 @@ class MainWindow(Gtk.ApplicationWindow):
                 f"System is missing required fields: {', '.join(fn.get('system_fields', []))}"
             )
             return
+        # Save last selections
+        self.cfg["last_system"] = system_name
+        self.cfg["last_user"] = user
+        self.cfg["last_function"] = fn_id
+        config.save_config(self.cfg)
         self._do_launch(system_name, user, system, fn)
 
     # ---- Launch flow ----

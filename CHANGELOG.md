@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 **DRAFT**
+
+- Trim main window image
+
 ## 0.1.2
 
 - Save last used system, user, and function when launching via quick access icons

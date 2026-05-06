@@ -1,5 +1,22 @@
+import os
 import shlex
 import subprocess
+
+
+def _english_env():
+    """Subprocess env that forces ACS prompts and message text into English.
+
+    Why: prompt detection and MSG/CPF parsing match English literals; without
+    this, a user with LANG=de_DE.UTF-8 would see localised strings and our
+    parser would silently fail.
+    """
+    env = os.environ.copy()
+    env["LANG"] = "C.UTF-8"
+    env["LC_ALL"] = "C.UTF-8"
+    existing = env.get("JAVA_TOOL_OPTIONS", "")
+    forced = "-Duser.language=en -Duser.country=US"
+    env["JAVA_TOOL_OPTIONS"] = (existing + " " + forced).strip() if existing else forced
+    return env
 
 
 def build_placeholders(config, system, user, password):
@@ -46,6 +63,7 @@ def run_logon(cmd_string, timeout=30):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            env=_english_env(),
         )
         output_lines = []
         failed = False
@@ -107,6 +125,7 @@ def launch(cmd_string):
             start_new_session=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
+            env=_english_env(),
         )
         # Wait briefly to catch immediate crashes
         try:

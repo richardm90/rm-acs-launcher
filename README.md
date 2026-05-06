@@ -38,6 +38,8 @@ The application allows selection of system, user and function. User passwords ar
 | cfg | System Configuration | No |
 | keyman | Certificate Management | No |
 
+Details of the ACS command-line options can be found here: [IBM i Access - ACS Getting Started]([ibm-i-access-acs-getting-started](https://www.ibm.com/support/pages/ibm-i-access-acs-getting-started))
+
 ## Requirements
 
 - Python 3
@@ -110,7 +112,7 @@ See [data/config.example.json](data/config.example.json) for an example.
 | ACS jar path | `/opt/ibm/iAccessClientSolutions/acsbundle.jar` | Path to the ACS bundle jar |
 | Java path | `/usr/bin/java` | Path to the Java runtime |
 | Java options | `-Xmx1024m` | JVM arguments |
-| Logon command | `{acs_exe} /plugin=logon /system={system} /userid={user} /password={password} /auth` | Command used for authentication |
+| Logon command | `{acs_exe} /plugin=logon /system={system} /userid={user} /auth /gui=0` | Command used for authentication |
 
 ### Placeholders
 
@@ -125,6 +127,12 @@ Launch and logon commands support these placeholders:
 | `{acs_jar}` | ACS jar path from preferences |
 | `{java}` | Java path from preferences |
 | `{custom_field}` | Any custom field defined on the system |
+
+## Credential Handling
+
+- **Storage** — Saved passwords live in your GNOME Keyring (Secret Service API), encrypted at rest and unlocked by your login session. The launcher's `~/.config/rm-acs-launcher/config.json` never contains plaintext credentials.
+- **Logon** — When the launcher needs to authenticate, the password is fed to ACS through a pseudo-terminal (PTY) rather than placed on the command line. This keeps it out of `/proc/<pid>/cmdline`, where it would otherwise be readable by any other local user for the duration of the logon process. Custom `logon_cmd` templates that still include `{password}` fall back to the original argv-based behaviour for backwards compatibility, but this is no longer recommended.
+- **File permissions** — `~/.config/rm-acs-launcher/` is `0700` and `config.json` is `0600`. Existing installs are tightened on the next save.
 
 ## Versioning
 
@@ -162,6 +170,16 @@ The installed version can be checked without running the app:
 ```bash
 cat ~/.local/share/rm-acs-launcher/VERSION
 ```
+
+## Acknowledgements
+
+Function icons in `data/icons/` are derived from [Lucide](https://lucide.dev/) (ISC license).
+
+## Trademarks
+
+IBM, IBM i, and IBM i Access Client Solutions are trademarks of International Business Machines Corporation, registered in many jurisdictions worldwide.
+
+This project is an independent community tool and is not affiliated with, sponsored by, or endorsed by IBM.
 
 ## Project Structure
 

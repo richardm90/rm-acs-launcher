@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0
+
+### Security
+
+- Passwords are no longer placed on the ACS subprocess command line. The launcher now feeds the password to the ACS logon prompt over a pseudo-terminal, keeping it out of `/proc/<pid>/cmdline` where any local user could read it during the logon. Existing configurations using the previous default `logon_cmd` are migrated automatically; custom templates that still embed `{password}` keep working under the original behaviour.
+- Tightened permissions on `~/.config/rm-acs-launcher/` to `0700` and `config.json` to `0600`. Existing installs are migrated on the next save.
+- Forced `LANG=C.UTF-8` and `JAVA_TOOL_OPTIONS=-Duser.language=en` on the ACS subprocess so prompt and message parsing is locale-stable.
+
+### Other
+
+- Trim main window image
+- Replace bundled function icons with Lucide-derived artwork; rename default fallback icon to `app-default.png` (existing configs are migrated automatically)
+
 ## 0.1.2
 
 - Save last used system, user, and function when launching via quick access icons

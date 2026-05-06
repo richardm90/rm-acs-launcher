@@ -377,7 +377,14 @@ class MainWindow(Gtk.ApplicationWindow):
                     GLib.idle_add(self._launch_finished)
                     return
 
-                ok, msg = launcher.run_logon(cmd)
+                # If the template doesn't embed {password}, the password is
+                # fed through a PTY so it never lands on the subprocess argv.
+                # Templates that do embed {password} (custom/legacy) keep
+                # the original argv-based behaviour.
+                if "{password}" in logon_cmd:
+                    ok, msg = launcher.run_logon(cmd)
+                else:
+                    ok, msg = launcher.run_logon(cmd, password=password)
                 if ok:
                     self._logged_on = logon_key
                 else:

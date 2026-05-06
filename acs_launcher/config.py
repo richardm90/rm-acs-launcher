@@ -111,12 +111,18 @@ DEFAULT_FUNCTIONS = [
     },
 ]
 
+# Old default carried by configs from before the PTY-based logon flow.
+# Configs matching this exactly are migrated to the new default on load so
+# the password no longer appears in the ACS subprocess argv.
+_LEGACY_LOGON_CMD = "{acs_exe} /plugin=logon /system={system} /userid={user} /password={password} /auth"
+
+
 DEFAULT_CONFIG = {
     "acs_exe_path": "/opt/ibm/iAccessClientSolutions/Start_Programs/Linux_x86-64/acslaunch_linux-64",
     "acs_jar_path": "/opt/ibm/iAccessClientSolutions/acsbundle.jar",
     "java_path": "/usr/bin/java",
     "java_opts": "-Xmx1024m",
-    "logon_cmd": "{acs_exe} /plugin=logon /system={system} /userid={user} /password={password} /auth",
+    "logon_cmd": "{acs_exe} /plugin=logon /system={system} /userid={user} /auth /gui=0",
     "systems": [],
     "functions": DEFAULT_FUNCTIONS,
     "last_system": "",
@@ -135,6 +141,11 @@ def load_config():
             for key in config:
                 if key in saved:
                     config[key] = saved[key]
+            # Migrate the old logon_cmd default to the new PTY-friendly one.
+            # Custom user templates (anything that doesn't match the old
+            # default exactly) are left untouched.
+            if config.get("logon_cmd") == _LEGACY_LOGON_CMD:
+                config["logon_cmd"] = DEFAULT_CONFIG["logon_cmd"]
             # Add any new default functions not present in the saved config
             saved_ids = {fn["id"] for fn in config["functions"]}
             for fn in DEFAULT_FUNCTIONS:

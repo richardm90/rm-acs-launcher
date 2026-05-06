@@ -38,6 +38,8 @@ The application allows selection of system, user and function. User passwords ar
 | cfg | System Configuration | No |
 | keyman | Certificate Management | No |
 
+Details of the ACS command-line options can be found here: [IBM i Access - ACS Getting Started]([ibm-i-access-acs-getting-started](https://www.ibm.com/support/pages/ibm-i-access-acs-getting-started))
+
 ## Requirements
 
 - Python 3
@@ -162,6 +164,16 @@ The installed version can be checked without running the app:
 ```bash
 cat ~/.local/share/rm-acs-launcher/VERSION
 ```
+
+## Acknowledgements
+
+Function icons in `data/icons/` are derived from [Lucide](https://lucide.dev/) (ISC license).
+
+## Trademarks
+
+IBM, IBM i, and IBM i Access Client Solutions are trademarks of International Business Machines Corporation, registered in many jurisdictions worldwide.
+
+This project is an independent community tool and is not affiliated with, sponsored by, or endorsed by IBM.
 
 ## Project Structure
 

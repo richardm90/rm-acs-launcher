@@ -62,7 +62,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": True,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "ssh",
@@ -71,7 +71,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "cfg",
@@ -80,7 +80,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "keyman",
@@ -89,7 +89,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "l1c",
@@ -98,12 +98,12 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": True,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "sysdbg",
         "label": "System Debugger",
-        "launch_cmd": "{java} -jar {acs_jar} /plugin=sysdbg /system={system}",
+        "launch_cmd": "{java} -jar {acs_jar} /plugin=sysdbg /system={system} /user={user}",
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": True,
@@ -140,6 +140,10 @@ def load_config():
             for fn in DEFAULT_FUNCTIONS:
                 if fn["id"] not in saved_ids:
                     config["functions"].append(copy.deepcopy(fn))
+            # Migrate the old default-icon filename
+            for fn in config["functions"]:
+                if fn.get("icon_path") == "acs-logo.png":
+                    fn["icon_path"] = "app-default.png"
         except (json.JSONDecodeError, OSError):
             pass
     return config

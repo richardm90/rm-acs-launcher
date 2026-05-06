@@ -3,6 +3,7 @@
 ## 0.1.3 **DRAFT**
 
 - Trim main window image
+- Replace bundled function icons with Lucide-derived artwork; rename default fallback icon to `app-default.png` (existing configs are migrated automatically)
 
 ## 0.1.2
 

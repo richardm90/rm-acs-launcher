@@ -161,10 +161,17 @@ def load_config():
 
 
 def save_config(config):
-    """Save config to disk, creating the directory if needed."""
+    """Save config to disk, creating the directory if needed.
+
+    Tightens permissions on every save so existing installs (whose config
+    was originally written under the default umask) get migrated the next
+    time the user touches a setting or launches a session.
+    """
     os.makedirs(CONFIG_DIR, exist_ok=True)
+    os.chmod(CONFIG_DIR, 0o700)
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
+    os.chmod(CONFIG_FILE, 0o600)
 
 
 def get_system(config, system_name):

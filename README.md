@@ -112,7 +112,7 @@ See [data/config.example.json](data/config.example.json) for an example.
 | ACS jar path | `/opt/ibm/iAccessClientSolutions/acsbundle.jar` | Path to the ACS bundle jar |
 | Java path | `/usr/bin/java` | Path to the Java runtime |
 | Java options | `-Xmx1024m` | JVM arguments |
-| Logon command | `{acs_exe} /plugin=logon /system={system} /userid={user} /password={password} /auth` | Command used for authentication |
+| Logon command | `{acs_exe} /plugin=logon /system={system} /userid={user} /auth /gui=0` | Command used for authentication |
 
 ### Placeholders
 
@@ -127,6 +127,12 @@ Launch and logon commands support these placeholders:
 | `{acs_jar}` | ACS jar path from preferences |
 | `{java}` | Java path from preferences |
 | `{custom_field}` | Any custom field defined on the system |
+
+## Credential Handling
+
+- **Storage** — Saved passwords live in your GNOME Keyring (Secret Service API), encrypted at rest and unlocked by your login session. The launcher's `~/.config/rm-acs-launcher/config.json` never contains plaintext credentials.
+- **Logon** — When the launcher needs to authenticate, the password is fed to ACS through a pseudo-terminal (PTY) rather than placed on the command line. This keeps it out of `/proc/<pid>/cmdline`, where it would otherwise be readable by any other local user for the duration of the logon process. Custom `logon_cmd` templates that still include `{password}` fall back to the original argv-based behaviour for backwards compatibility, but this is no longer recommended.
+- **File permissions** — `~/.config/rm-acs-launcher/` is `0700` and `config.json` is `0600`. Existing installs are tightened on the next save.
 
 ## Versioning
 

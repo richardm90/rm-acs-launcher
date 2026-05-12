@@ -74,7 +74,18 @@ This installs the application to `~/.local/share/rm-acs-launcher/`, creates a la
 
 Once installed, the source repository is no longer needed and can be removed.
 
-3. Launch from the application menu, or from the terminal:
+3. Create a link to a central configuration file (optional):
+
+The configuration settings within rm-acs-launcher are stored locally in `~/.config/rm-acs-launcher/config.json`. If you'd like to point to a central configuration file shared across multiple machines you can easily achieve this with a symlink.
+
+```bash
+mkdir -p ~/.config/rm-acs-launcher
+ln -s ~/Documents/config/rm-acs-launcher/config.json ~/.config/rm-acs-launcher/config.json
+```
+
+In this example `~/Documents/config/rm-acs-launcher/config.json` is the central configuration file.
+
+4. Launch from the application menu, or from the terminal:
 
 ```bash
 rm-acs-launcher

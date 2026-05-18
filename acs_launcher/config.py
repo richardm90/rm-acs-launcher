@@ -128,6 +128,7 @@ DEFAULT_CONFIG = {
     "last_system": "",
     "last_user": "",
     "last_function": "",
+    "enable_logging": True,
 }
 
 

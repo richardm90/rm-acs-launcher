@@ -1,7 +1,12 @@
+import os
+import subprocess
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+
+from acs_launcher import logging_setup
 
 
 class PreferencesDialog(Gtk.Dialog):
@@ -91,7 +96,58 @@ class PreferencesDialog(Gtk.Dialog):
         self.logon_entry.set_hexpand(True)
         grid.attach(self.logon_entry, 1, 4, 1, 1)
 
+        # Diagnostic logging
+        grid.attach(
+            Gtk.Label(label="Diagnostic log:", halign=Gtk.Align.END), 0, 5, 1, 1
+        )
+        log_box = Gtk.Box(spacing=6)
+        self.log_check = Gtk.CheckButton(label="Enable launch logging")
+        self.log_check.set_active(cfg.get("enable_logging", True))
+        log_box.pack_start(self.log_check, True, True, 0)
+
+        view_log_btn = Gtk.Button(label="View log")
+        view_log_btn.connect("clicked", self._on_view_log)
+        log_box.pack_start(view_log_btn, False, False, 0)
+        grid.attach(log_box, 1, 5, 1, 1)
+
         self.show_all()
+
+    def _on_view_log(self, button):
+        path = logging_setup.LOG_FILE
+        if not os.path.exists(path):
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.INFO,
+                buttons=Gtk.ButtonsType.OK,
+                text="No log file yet",
+            )
+            dialog.format_secondary_text(
+                f"Nothing has been logged yet. Expected location:\n{path}"
+            )
+            dialog.run()
+            dialog.destroy()
+            return
+        try:
+            subprocess.Popen(
+                ["xdg-open", path],
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Could not open log file",
+            )
+            dialog.format_secondary_text(
+                f"xdg-open is not installed. Open the file manually:\n{path}"
+            )
+            dialog.run()
+            dialog.destroy()
 
     def _on_browse_exe(self, button):
         path = self._file_chooser("Select ACS executable")
@@ -138,3 +194,4 @@ class PreferencesDialog(Gtk.Dialog):
         self.cfg["java_path"] = self.java_entry.get_text().strip()
         self.cfg["java_opts"] = self.opts_entry.get_text().strip()
         self.cfg["logon_cmd"] = self.logon_entry.get_text().strip()
+        self.cfg["enable_logging"] = self.log_check.get_active()

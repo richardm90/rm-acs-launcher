@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0
+
+### Added
+
+- Diagnostic launch logging. Each launch attempt is recorded to `~/.local/state/rm-acs-launcher/launcher.log` (rotating, 1 MB × 3) including the command, return code, and full stdout/stderr — useful for diagnosing launches that fail or report a spurious error in the status bar. Passwords are redacted from the log via both per-launch secret masking and a regex pass over common password flags.
+- "Enable launch logging" toggle and "View log" button in Preferences. View log opens the file with the desktop's default text viewer via `xdg-open`.
+- README instructions for pointing the launcher at a central configuration file via a symlink.
+
+### Fixed
+
+- Spurious "Launch failed (rc=1): Picked up JAVA_TOOL_OPTIONS…" message in the status bar when a launch succeeded. The JVM's informational `JAVA_TOOL_OPTIONS` notice is no longer triggered on the launch path — `JAVA_TOOL_OPTIONS` is now only set for the logon path, where output parsing genuinely needs locale-stable English text.
+
 ## 0.2.0
 
 ### Security

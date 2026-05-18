@@ -3,8 +3,18 @@ import pty
 import select
 import shlex
 import subprocess
+import tempfile
 import termios
 import time
+
+from acs_launcher import logging_setup
+
+log = logging_setup.get_logger()
+
+# Env vars worth logging when a launch fails. Logging the full env risks
+# capturing secrets inherited from the shell, so we whitelist the ones
+# that actually affect ACS/Java behaviour.
+_LOGGED_ENV_KEYS = ("JAVA_TOOL_OPTIONS", "LANG", "LC_ALL", "DISPLAY")
 
 
 def _english_env():
@@ -12,7 +22,10 @@ def _english_env():
 
     Why: prompt detection and MSG/CPF parsing match English literals; without
     this, a user with LANG=de_DE.UTF-8 would see localised strings and our
-    parser would silently fail.
+    parser would silently fail. Only used for the logon path, where we read
+    the subprocess's output. The launch path uses _launch_env() instead so
+    the JVM doesn't print its "Picked up JAVA_TOOL_OPTIONS" notice to stderr
+    (which `acslaunch` then exits rc=1 on, producing a spurious error).
     """
     env = os.environ.copy()
     env["LANG"] = "C.UTF-8"
@@ -21,6 +34,13 @@ def _english_env():
     forced = "-Duser.language=en -Duser.country=US"
     env["JAVA_TOOL_OPTIONS"] = (existing + " " + forced).strip() if existing else forced
     return env
+
+
+def _launch_env():
+    """Subprocess env for fire-and-forget launches. Inherits the caller's
+    environment unchanged — we don't parse the child's output, so the locale
+    doesn't matter, and avoiding JAVA_TOOL_OPTIONS keeps the JVM quiet."""
+    return os.environ.copy()
 
 
 def build_placeholders(config, system, user, password):
@@ -63,63 +83,76 @@ def run_logon(cmd_string, password=None, timeout=30):
     and our driver would hang waiting for a prompt that never arrives).
     The password never appears on the subprocess argv.
     """
-    if password is not None:
-        return _run_logon_pty(cmd_string, password, timeout)
+    if password:
+        logging_setup.add_secret(password)
+    log.info("run_logon: cmd=%s mode=%s", cmd_string, "pty" if password else "argv")
     try:
-        args = shlex.split(cmd_string)
-        proc = subprocess.Popen(
-            args,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=_english_env(),
-        )
-        output_lines = []
-        failed = False
-        succeeded = False
-        try:
-            while True:
-                line = proc.stdout.readline()
-                if not line:
-                    break
-                line = line.strip()
-                if line:
-                    output_lines.append(line)
-                if "Login failed" in line or "Signon to" in line:
-                    failed = True
-                    break
-                if "completed successfully" in line:
-                    succeeded = True
-                    break
-        except Exception:
-            pass
+        if password is not None:
+            ok, msg = _run_logon_pty(cmd_string, password, timeout)
+            log.info("run_logon: result ok=%s msg=%s", ok, msg)
+            return ok, msg
 
-        if failed:
+        try:
+            args = shlex.split(cmd_string)
+            proc = subprocess.Popen(
+                args,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=_english_env(),
+            )
+            output_lines = []
+            failed = False
+            succeeded = False
+            try:
+                while True:
+                    line = proc.stdout.readline()
+                    if not line:
+                        break
+                    line = line.strip()
+                    if line:
+                        output_lines.append(line)
+                    if "Login failed" in line or "Signon to" in line:
+                        failed = True
+                        break
+                    if "completed successfully" in line:
+                        succeeded = True
+                        break
+            except Exception:
+                pass
+
+            if failed:
+                proc.kill()
+                proc.wait()
+                errors = [l for l in output_lines if l.startswith("MSG") or l.startswith("CPF")]
+                detail = "; ".join(errors) if errors else "; ".join(output_lines[:3])
+                log.info("run_logon: failed detail=%s", detail)
+                return False, f"Logon failed: {detail}"
+
+            if succeeded:
+                proc.wait(timeout=5)
+                log.info("run_logon: succeeded")
+                return True, "Logon successful"
+
+            proc.wait(timeout=timeout)
+            if proc.returncode == 0:
+                log.info("run_logon: succeeded (rc=0, no completion line)")
+                return True, "Logon successful"
+            detail = "; ".join(output_lines[:3]) if output_lines else "no output"
+            log.info("run_logon: failed rc=%d detail=%s", proc.returncode, detail)
+            return False, f"Logon failed (rc={proc.returncode}): {detail}"
+
+        except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait()
-            # Extract the most useful error line (MSG... lines)
-            errors = [l for l in output_lines if l.startswith("MSG") or l.startswith("CPF")]
-            detail = "; ".join(errors) if errors else "; ".join(output_lines[:3])
-            return False, f"Logon failed: {detail}"
-
-        if succeeded:
-            proc.wait(timeout=5)
-            return True, "Logon successful"
-
-        # Process ended without clear success/failure — check exit code
-        proc.wait(timeout=timeout)
-        if proc.returncode == 0:
-            return True, "Logon successful"
-        detail = "; ".join(output_lines[:3]) if output_lines else "no output"
-        return False, f"Logon failed (rc={proc.returncode}): {detail}"
-
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.wait()
-        return False, "Logon timed out"
-    except Exception as e:
-        return False, f"Logon error: {e}"
+            log.info("run_logon: timed out")
+            return False, "Logon timed out"
+        except Exception as e:
+            log.exception("run_logon: unexpected error")
+            return False, f"Logon error: {e}"
+    finally:
+        logging_setup.clear_secrets()
 
 
 def _ends_with_prompt(buf):
@@ -247,35 +280,64 @@ def _run_logon_pty(cmd_string, password, timeout):
     return _evaluate_logon_output(text, rc)
 
 
-def launch(cmd_string):
+def launch(cmd_string, password=None):
     """Launch a command (fire-and-forget, detached from this process).
 
     Waits briefly to catch immediate failures (e.g. bad path, missing file).
     Returns (success, message).
+
+    `password`, if given, is registered with the log redactor so any custom
+    launch_cmd template that embeds {password} doesn't write it to the log.
     """
+    if password:
+        logging_setup.add_secret(password)
+    # Use temp files (not PIPEs) so the child can keep writing past the 2s
+    # window without us holding fds it would otherwise block on.
+    out_f = tempfile.TemporaryFile()
+    err_f = tempfile.TemporaryFile()
     try:
         args = shlex.split(cmd_string)
-        proc = subprocess.Popen(
-            args,
-            start_new_session=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            env=_english_env(),
-        )
-        # Wait briefly to catch immediate crashes
+        env = _launch_env()
+        env_summary = {k: env.get(k, "") for k in _LOGGED_ENV_KEYS}
+        log.info("launch: cmd=%s", cmd_string)
+        log.debug("launch: argv=%r env=%r", args, env_summary)
+        try:
+            proc = subprocess.Popen(
+                args,
+                start_new_session=True,
+                stdout=out_f,
+                stderr=err_f,
+                env=env,
+            )
+        except FileNotFoundError:
+            log.warning("launch: command not found: %s", args[0] if args else "")
+            return False, f"Launch error: command not found — {args[0] if args else ''}"
+
         try:
             proc.wait(timeout=2)
-            # Process exited within 2s — likely an error
-            stderr = proc.stderr.read().decode("utf-8", errors="replace").strip()
-            proc.stderr.close()
+            out_f.seek(0)
+            err_f.seek(0)
+            stdout = out_f.read().decode("utf-8", errors="replace").strip()
+            stderr = err_f.read().decode("utf-8", errors="replace").strip()
+            log.info(
+                "launch: exited within 2s rc=%d stdout_len=%d stderr_len=%d",
+                proc.returncode, len(stdout), len(stderr),
+            )
+            if stdout:
+                log.debug("launch: stdout=%s", stdout)
+            if stderr:
+                log.debug("launch: stderr=%s", stderr)
             if proc.returncode != 0 and stderr:
                 return False, f"Launch failed (rc={proc.returncode}): {stderr[:200]}"
             return True, "Launched successfully"
         except subprocess.TimeoutExpired:
-            # Still running after 2s — that's the expected case
-            proc.stderr.close()
+            log.info("launch: still running after 2s (treating as success)")
             return True, "Launched successfully"
-    except FileNotFoundError:
-        return False, f"Launch error: command not found — {shlex.split(cmd_string)[0]}"
     except Exception as e:
+        log.exception("launch: unexpected error")
         return False, f"Launch error: {e}"
+    finally:
+        # Don't close the temp files if the child is still running — it
+        # still holds them via its inherited fds and will write to them
+        # until it exits. They'll be reclaimed when the child closes them.
+        logging_setup.clear_secrets()

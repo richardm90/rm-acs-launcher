@@ -124,6 +124,7 @@ See [data/config.example.json](data/config.example.json) for an example.
 | Java path | `/usr/bin/java` | Path to the Java runtime |
 | Java options | `-Xmx1024m` | JVM arguments |
 | Logon command | `{acs_exe} /plugin=logon /system={system} /userid={user} /auth /gui=0` | Command used for authentication |
+| Enable launch logging | On | Writes a diagnostic log of each launch attempt to `~/.local/state/rm-acs-launcher/launcher.log` |
 
 ### Placeholders
 
@@ -138,6 +139,18 @@ Launch and logon commands support these placeholders:
 | `{acs_jar}` | ACS jar path from preferences |
 | `{java}` | Java path from preferences |
 | `{custom_field}` | Any custom field defined on the system |
+
+## Troubleshooting
+
+If a launch fails — or if the status bar shows an unexpected message — the launcher records each attempt to a diagnostic log:
+
+```
+~/.local/state/rm-acs-launcher/launcher.log
+```
+
+Open it from **Preferences → View log**, or directly with any text editor. Each entry includes the resolved command, return code, and the full stdout/stderr from the subprocess. Passwords are redacted before being written to the log.
+
+Logging is on by default and can be disabled via the **Enable launch logging** checkbox in Preferences. The log rotates at 1 MB and keeps three previous files.
 
 ## Credential Handling
 
@@ -201,6 +214,7 @@ rm-acs-launcher/
 │   ├── window.py            # Main window UI and launch logic
 │   ├── launcher.py          # Command substitution and process execution
 │   ├── config.py            # Configuration load/save
+│   ├── logging_setup.py     # Diagnostic log file and password redaction
 │   ├── passwords.py         # GNOME Keyring integration
 │   └── dialogs/
 │       ├── password_dialog.py          # Password entry dialog

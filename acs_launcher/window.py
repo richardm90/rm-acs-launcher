@@ -5,7 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
-from acs_launcher import __version__, config, passwords, launcher
+from acs_launcher import __version__, config, passwords, launcher, logging_setup
 from acs_launcher.dialogs.password_dialog import PasswordDialog
 from acs_launcher.dialogs.system_manager_dialog import SystemManagerDialog
 from acs_launcher.dialogs.function_manager_dialog import FunctionManagerDialog
@@ -403,7 +403,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 GLib.idle_add(self._launch_finished)
                 return
 
-            ok, msg = launcher.launch(cmd)
+            ok, msg = launcher.launch(cmd, password=password)
             if ok:
                 GLib.idle_add(self._set_status, msg)
             else:
@@ -513,5 +513,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if response == Gtk.ResponseType.OK:
             dialog.apply()
             config.save_config(self.cfg)
+            logging_setup.configure(self.cfg.get("enable_logging", True))
             self._set_status("Preferences saved")
         dialog.destroy()

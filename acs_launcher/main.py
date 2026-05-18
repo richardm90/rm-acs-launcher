@@ -11,8 +11,11 @@ from gi.repository import GLib, Gtk, GdkPixbuf
 
 GLib.set_prgname("com.github.richardm90.rm-acs-launcher")
 
-from acs_launcher import __version__
+from acs_launcher import __version__, config, logging_setup
 from acs_launcher.window import MainWindow
+
+logging_setup.configure(config.load_config().get("enable_logging", True))
+logging_setup.get_logger().info("rm-acs-launcher %s starting", __version__)
 
 ICON_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "rm-acs-launcher.png")
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0
+
+### Added
+
+- Diagnostic launch logging. Each launch attempt is recorded to `~/.local/state/rm-acs-launcher/launcher.log` (rotating, 1 MB × 3) including the command, return code, and full stdout/stderr — useful for diagnosing launches that fail or report a spurious error in the status bar. Passwords are redacted from the log via both per-launch secret masking and a regex pass over common password flags.
+- "Enable launch logging" toggle and "View log" button in Preferences. View log opens the file with the desktop's default text viewer via `xdg-open`.
+- README instructions for pointing the launcher at a central configuration file via a symlink.
+
+### Fixed
+
+- Spurious "Launch failed (rc=1): Picked up JAVA_TOOL_OPTIONS…" message in the status bar when a launch succeeded. The JVM's informational `JAVA_TOOL_OPTIONS` notice is no longer triggered on the launch path — `JAVA_TOOL_OPTIONS` is now only set for the logon path, where output parsing genuinely needs locale-stable English text.
+
+## 0.2.0
+
+### Security
+
+- Passwords are no longer placed on the ACS subprocess command line. The launcher now feeds the password to the ACS logon prompt over a pseudo-terminal, keeping it out of `/proc/<pid>/cmdline` where any local user could read it during the logon. Existing configurations using the previous default `logon_cmd` are migrated automatically; custom templates that still embed `{password}` keep working under the original behaviour.
+- Tightened permissions on `~/.config/rm-acs-launcher/` to `0700` and `config.json` to `0600`. Existing installs are migrated on the next save.
+- Forced `LANG=C.UTF-8` and `JAVA_TOOL_OPTIONS=-Duser.language=en` on the ACS subprocess so prompt and message parsing is locale-stable.
+
+### Other
+
+- Trim main window image
+- Replace bundled function icons with Lucide-derived artwork; rename default fallback icon to `app-default.png` (existing configs are migrated automatically)
+
 ## 0.1.2
 
 - Save last used system, user, and function when launching via quick access icons

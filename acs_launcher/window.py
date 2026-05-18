@@ -5,7 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
-from acs_launcher import __version__, config, passwords, launcher
+from acs_launcher import __version__, config, passwords, launcher, logging_setup
 from acs_launcher.dialogs.password_dialog import PasswordDialog
 from acs_launcher.dialogs.system_manager_dialog import SystemManagerDialog
 from acs_launcher.dialogs.function_manager_dialog import FunctionManagerDialog
@@ -13,9 +13,9 @@ from acs_launcher.dialogs.preferences_dialog import PreferencesDialog
 
 import os
 
-ACS_LOGO_PATH = os.path.join(
+DEFAULT_ICON_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "icons", "acs-logo.png",
+    "data", "icons", "app-default.png",
 )
 
 
@@ -98,15 +98,15 @@ class MainWindow(Gtk.ApplicationWindow):
         vbox.pack_start(self.launch_row, False, False, 0)
 
         # ACS default launcher icon
-        if os.path.exists(ACS_LOGO_PATH):
+        if os.path.exists(DEFAULT_ICON_PATH):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                ACS_LOGO_PATH, 28, 28, True
+                DEFAULT_ICON_PATH, 28, 28, True
             )
             acs_image = Gtk.Image.new_from_pixbuf(pixbuf)
             acs_btn = Gtk.Button()
             acs_btn.set_image(acs_image)
             acs_btn.set_relief(Gtk.ReliefStyle.NONE)
-            acs_btn.set_tooltip_text("IBM ACS Launcher")
+            acs_btn.set_tooltip_text("Launch ACS")
             acs_btn.connect("clicked", self._on_launch_acs)
             self.launch_row.pack_start(acs_btn, False, False, 0)
 
@@ -261,7 +261,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 continue
             icon_path = config.resolve_icon_path(fn.get("icon_path", ""), fn["id"])
             if not icon_path or not os.path.exists(icon_path):
-                icon_path = ACS_LOGO_PATH
+                icon_path = DEFAULT_ICON_PATH
             if not os.path.exists(icon_path):
                 continue
             try:
@@ -377,7 +377,14 @@ class MainWindow(Gtk.ApplicationWindow):
                     GLib.idle_add(self._launch_finished)
                     return
 
-                ok, msg = launcher.run_logon(cmd)
+                # If the template doesn't embed {password}, the password is
+                # fed through a PTY so it never lands on the subprocess argv.
+                # Templates that do embed {password} (custom/legacy) keep
+                # the original argv-based behaviour.
+                if "{password}" in logon_cmd:
+                    ok, msg = launcher.run_logon(cmd)
+                else:
+                    ok, msg = launcher.run_logon(cmd, password=password)
                 if ok:
                     self._logged_on = logon_key
                 else:
@@ -396,7 +403,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 GLib.idle_add(self._launch_finished)
                 return
 
-            ok, msg = launcher.launch(cmd)
+            ok, msg = launcher.launch(cmd, password=password)
             if ok:
                 GLib.idle_add(self._set_status, msg)
             else:
@@ -506,5 +513,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if response == Gtk.ResponseType.OK:
             dialog.apply()
             config.save_config(self.cfg)
+            logging_setup.configure(self.cfg.get("enable_logging", True))
             self._set_status("Preferences saved")
         dialog.destroy()

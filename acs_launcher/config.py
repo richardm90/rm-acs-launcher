@@ -62,7 +62,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": True,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "ssh",
@@ -71,7 +71,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "cfg",
@@ -80,7 +80,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "keyman",
@@ -89,7 +89,7 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "l1c",
@@ -98,12 +98,12 @@ DEFAULT_FUNCTIONS = [
         "requires_logon": True,
         "system_fields": [],
         "is_favourite": False,
-        "icon_path": "acs-logo.png",
+        "icon_path": "app-default.png",
     },
     {
         "id": "sysdbg",
         "label": "System Debugger",
-        "launch_cmd": "{java} -jar {acs_jar} /plugin=sysdbg /system={system}",
+        "launch_cmd": "{java} -jar {acs_jar} /plugin=sysdbg /system={system} /user={user}",
         "requires_logon": False,
         "system_fields": [],
         "is_favourite": True,
@@ -111,17 +111,24 @@ DEFAULT_FUNCTIONS = [
     },
 ]
 
+# Old default carried by configs from before the PTY-based logon flow.
+# Configs matching this exactly are migrated to the new default on load so
+# the password no longer appears in the ACS subprocess argv.
+_LEGACY_LOGON_CMD = "{acs_exe} /plugin=logon /system={system} /userid={user} /password={password} /auth"
+
+
 DEFAULT_CONFIG = {
     "acs_exe_path": "/opt/ibm/iAccessClientSolutions/Start_Programs/Linux_x86-64/acslaunch_linux-64",
     "acs_jar_path": "/opt/ibm/iAccessClientSolutions/acsbundle.jar",
     "java_path": "/usr/bin/java",
     "java_opts": "-Xmx1024m",
-    "logon_cmd": "{acs_exe} /plugin=logon /system={system} /userid={user} /password={password} /auth",
+    "logon_cmd": "{acs_exe} /plugin=logon /system={system} /userid={user} /auth /gui=0",
     "systems": [],
     "functions": DEFAULT_FUNCTIONS,
     "last_system": "",
     "last_user": "",
     "last_function": "",
+    "enable_logging": True,
 }
 
 
@@ -135,21 +142,37 @@ def load_config():
             for key in config:
                 if key in saved:
                     config[key] = saved[key]
+            # Migrate the old logon_cmd default to the new PTY-friendly one.
+            # Custom user templates (anything that doesn't match the old
+            # default exactly) are left untouched.
+            if config.get("logon_cmd") == _LEGACY_LOGON_CMD:
+                config["logon_cmd"] = DEFAULT_CONFIG["logon_cmd"]
             # Add any new default functions not present in the saved config
             saved_ids = {fn["id"] for fn in config["functions"]}
             for fn in DEFAULT_FUNCTIONS:
                 if fn["id"] not in saved_ids:
                     config["functions"].append(copy.deepcopy(fn))
+            # Migrate the old default-icon filename
+            for fn in config["functions"]:
+                if fn.get("icon_path") == "acs-logo.png":
+                    fn["icon_path"] = "app-default.png"
         except (json.JSONDecodeError, OSError):
             pass
     return config
 
 
 def save_config(config):
-    """Save config to disk, creating the directory if needed."""
+    """Save config to disk, creating the directory if needed.
+
+    Tightens permissions on every save so existing installs (whose config
+    was originally written under the default umask) get migrated the next
+    time the user touches a setting or launches a session.
+    """
     os.makedirs(CONFIG_DIR, exist_ok=True)
+    os.chmod(CONFIG_DIR, 0o700)
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
+    os.chmod(CONFIG_FILE, 0o600)
 
 
 def get_system(config, system_name):

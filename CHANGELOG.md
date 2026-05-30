@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+### Fixed
+
+- Intermittent "Logon failed (rc=-9): Picked up JAVA_TOOL_OPTIONS…" message in the status bar when authenticating a 5250 (or other logon-gated) session, even though logon had actually succeeded. The PTY prompt detector required the prompt to end with `": "` (colon + space) and expected the username and password prompts to arrive as two separate reads; depending on `os.read` chunk-boundary timing the trailing space could be split off, or the two prompts could coalesce into one chunk, so the password was never sent and the logon loop idled to its 30 s timeout and SIGKILLed the child (rc=-9). The detector now tolerates a missing trailing space and drives the password from the prompt's content (`Password`) rather than its position. Added a `tests/` suite (stdlib `unittest`, no new dependencies) covering both failure modes.
+
 ## 0.3.0
 
 ### Added

@@ -156,12 +156,22 @@ def run_logon(cmd_string, password=None, timeout=30):
 
 
 def _ends_with_prompt(buf):
-    """True if `buf` ends with a prompt-like fragment (last line ends with ': ')."""
+    """True if `buf` ends with a prompt-like fragment (last line ends with a
+    colon, optionally followed by whitespace).
+
+    ACS prints its prompts ("User (richardm): ", "Password: ") via
+    Console.readLine/readPassword with no trailing newline, so the banner and
+    both prompts coalesce onto one line. We must not require a trailing space:
+    an os.read() chunk boundary can split the space off after the colon (or the
+    prompt may emit no space at all), and a missing match here means the
+    password is never sent and the logon loop times out (rc=-9). Matching a
+    trailing ':' plus optional spaces is robust to that timing race.
+    """
     if not buf:
         return False
     nl = buf.rfind(b"\n")
     tail = bytes(buf[nl + 1:]) if nl >= 0 else bytes(buf)
-    return tail.endswith(b": ")
+    return tail.rstrip(b" \t").endswith(b":")
 
 
 def _drain_master(master_fd, output, max_secs):
@@ -206,7 +216,6 @@ def _run_logon_pty(cmd_string, password, timeout):
     output = bytearray()
     user_sent = False
     pwd_sent = False
-    prompt_after_user = 0
     try:
         # Pre-disable echo so the password doesn't echo back into our buffer
         # and to avoid a race with Java's Console.readPassword disabling echo
@@ -240,15 +249,24 @@ def _run_logon_pty(cmd_string, password, timeout):
                 if not chunk:
                     break
                 output.extend(chunk)
-                if not user_sent and _ends_with_prompt(output):
-                    os.write(master_fd, b"\n")
-                    user_sent = True
-                    prompt_after_user = len(output)
-                elif (user_sent and not pwd_sent
-                      and len(output) > prompt_after_user
-                      and _ends_with_prompt(output)):
+                # Drive the prompts by content, not by "a new prompt appeared".
+                # ACS can emit "User (richardm): Password: " coalesced into one
+                # os.read() chunk; a positional check ("output grew since the
+                # username prompt") would then never fire the password branch,
+                # because ACS is already blocked waiting for the password and
+                # emits nothing more — the loop would idle to its timeout (rc=-9).
+                # The password prompt is unambiguous (it contains "Password"),
+                # so send the password as soon as we see it.
+                if not pwd_sent and _ends_with_prompt(output) and b"Password" in output:
+                    if not user_sent:
+                        # Username prompt was coalesced with the password prompt
+                        # (or already satisfied by /userid=); just answer the password.
+                        user_sent = True
                     os.write(master_fd, password.encode("utf-8") + b"\n")
                     pwd_sent = True
+                elif not user_sent and _ends_with_prompt(output):
+                    os.write(master_fd, b"\n")
+                    user_sent = True
                 # Early-break on a clear failure: ACS retries the prompt
                 # after a bad password, so without this we'd idle until the
                 # full timeout instead of returning the actual error.

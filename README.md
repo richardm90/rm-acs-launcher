@@ -195,6 +195,23 @@ The installed version can be checked without running the app:
 cat ~/.local/share/rm-acs-launcher/VERSION
 ```
 
+## Testing
+
+The test suite uses Python's built-in `unittest` — no extra packages are required. Run it from the repository root:
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+A trailing `OK` means every test passed. Useful variations:
+
+```bash
+python3 -m unittest discover -s tests -v   # list each test as it runs
+python3 -m unittest tests.test_launch      # run a single test module
+```
+
+The launch tests spawn short-lived subprocesses and may print `ResourceWarning: unclosed file` lines. These are expected — `launcher.launch` deliberately leaves its output temp files open so the detached child can keep writing to them — and do not indicate a failure. Suppress them with `python3 -W ignore::ResourceWarning -m unittest discover -s tests` if preferred.
+
 ## Acknowledgements
 
 Function icons in `data/icons/` are derived from [Lucide](https://lucide.dev/) (ISC license).
@@ -226,6 +243,7 @@ rm-acs-launcher/
 │   ├── config.example.json         # Example configuration
 │   ├── rm-acs-launcher.desktop     # Desktop entry template
 │   └── rm-acs-launcher.png         # Application icon
+├── tests/                          # unittest suite (see Testing)
 ├── install.sh
 ├── uninstall.sh
 ├── CHANGELOG.md

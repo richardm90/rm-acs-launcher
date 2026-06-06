@@ -298,6 +298,21 @@ def _run_logon_pty(cmd_string, password, timeout):
     return _evaluate_logon_output(text, rc)
 
 
+def _missing_session_files(args):
+    """Return the first .hod argument that points at a non-existent file.
+
+    ACS launches an emulator session by being handed the path to a .hod file.
+    If that path is wrong (e.g. a case mismatch on a case-sensitive
+    filesystem), ACS exits silently with rc=0 — indistinguishable from success
+    via exit code alone. We validate .hod arguments here so the caller can
+    report a real failure. Returns None if all .hod args (if any) exist.
+    """
+    for arg in args:
+        if arg.lower().endswith(".hod") and not os.path.isfile(arg):
+            return arg
+    return None
+
+
 def launch(cmd_string, password=None):
     """Launch a command (fire-and-forget, detached from this process).
 
@@ -319,6 +334,14 @@ def launch(cmd_string, password=None):
         env_summary = {k: env.get(k, "") for k in _LOGGED_ENV_KEYS}
         log.info("launch: cmd=%s", cmd_string)
         log.debug("launch: argv=%r env=%r", args, env_summary)
+        # ACS exits quietly (rc=0, no stderr) when handed a .hod session file
+        # that doesn't exist, which our "still running / rc=0" heuristics would
+        # otherwise report as a successful launch. Catch the missing file up
+        # front so the user gets a real error instead of a false success.
+        missing = _missing_session_files(args)
+        if missing:
+            log.warning("launch: session file not found: %s", missing)
+            return False, f"Launch failed: file not found — {missing}"
         try:
             proc = subprocess.Popen(
                 args,

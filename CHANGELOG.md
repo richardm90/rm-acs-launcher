@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+### Fixed
+
+- "Launched successfully" reported in the status bar when a 5250 (or other `.hod`-based) session failed to open because the configured `.hod` session file did not exist — e.g. a case mismatch on a case-sensitive filesystem, where the config held `MYIBMI.COM.hod` but the file on disk was `myibmi.com.hod`. ACS exits silently with rc=0 when handed a non-existent `.hod` path, which the launcher's "still running / rc=0 ⇒ success" heuristic could not distinguish from a real launch. `launcher.launch` now validates that any `.hod` argument exists before spawning ACS and reports "Launch failed: file not found — …" otherwise. Added `tests/test_launch.py` covering the missing/existing/no-`.hod` cases.
+
 ## 0.3.1
 
 ### Fixed
